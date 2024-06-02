@@ -1,0 +1,17 @@
+[package]
+name = "poker_rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.7.5"                                                          # for testing
+rand = "0.8.5"
+serde = { version = "1.0.203", optional = true, features = ["derive"] }
+serde_json = "1.0.117"                                                  # for testing
+thiserror = "1.0.61"
+tokio = { version = "1.38.0", features = ["full"] }                     # for testing
+
+[features]
+default = ["serde"]
