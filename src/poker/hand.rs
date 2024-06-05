@@ -1,8 +1,4 @@
-use std::{
-    fmt,
-    ops::{Index, RangeFrom, RangeFull, RangeTo},
-    slice::Iter,
-};
+use std::{fmt, slice::Iter};
 
 use crate::error::Result;
 
@@ -23,6 +19,10 @@ impl Hand {
             cards.push(card)
         }
         Ok(Self(cards))
+    }
+
+    pub fn cards(&self) -> &[Card] {
+        &self.0
     }
 
     pub fn len(&self) -> usize {
@@ -53,41 +53,11 @@ impl Hand {
     }
 }
 
-/// Allow indexing into the hand.
-impl Index<usize> for Hand {
-    type Output = Card;
-    fn index(&self, index: usize) -> &Card {
-        &self.0[index]
-    }
-}
-
-/// Allow the index to get refernce to every card.
-impl Index<RangeFull> for Hand {
-    type Output = [Card];
-    fn index(&self, range: RangeFull) -> &[Card] {
-        &self.0[range]
-    }
-}
-
-impl Index<RangeTo<usize>> for Hand {
-    type Output = [Card];
-    fn index(&self, index: RangeTo<usize>) -> &[Card] {
-        &self.0[index]
-    }
-}
-
-impl Index<RangeFrom<usize>> for Hand {
-    type Output = [Card];
-    fn index(&self, index: RangeFrom<usize>) -> &[Card] {
-        &self.0[index]
-    }
-}
-
-impl Extend<Card> for Hand {
-    fn extend<T: IntoIterator<Item = Card>>(&mut self, iter: T) {
-        self.0.extend(iter);
-    }
-}
+// impl Extend<Card> for Hand {
+//     fn extend<T: IntoIterator<Item = Card>>(&mut self, iter: T) {
+//         self.0.extend(iter);
+//     }
+// }
 
 impl fmt::Display for Hand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

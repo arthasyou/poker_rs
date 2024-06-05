@@ -7,14 +7,10 @@ use crate::error::{Error, Result};
 /// Card suits.
 #[derive(PartialEq, PartialOrd, Eq, Ord, Clone, Hash, Debug)]
 pub enum Suit {
-    /// Spades
-    Spade = 3,
-    /// Hearts
-    Heart = 2,
-    /// Diamonds
-    Diamond = 1,
-    /// Clubs
-    Club = 0,
+    Club,
+    Diamond,
+    Heart,
+    Spade,
 }
 
 /// All of the Suits
@@ -54,11 +50,10 @@ impl Suit {
     }
 }
 
-/// Card value or value.
+/// Card rank or rank.
 #[derive(PartialEq, PartialOrd, Eq, Ord, Clone, Hash, Debug)]
-pub enum Value {
-    /// Ace Value 1 or 14
-    Two = 0,
+pub enum Rank {
+    Two,
     Three,
     Four,
     Five,
@@ -73,93 +68,125 @@ pub enum Value {
     Ace,
 }
 
-/// Constant of all values.
-const RANKS: [Value; 13] = [
-    Value::Ace,
-    Value::Two,
-    Value::Three,
-    Value::Four,
-    Value::Five,
-    Value::Six,
-    Value::Seven,
-    Value::Eight,
-    Value::Nine,
-    Value::Ten,
-    Value::Jack,
-    Value::Queen,
-    Value::King,
+/// Constant of all ranks.
+const RANKS: [Rank; 13] = [
+    Rank::Ace,
+    Rank::Two,
+    Rank::Three,
+    Rank::Four,
+    Rank::Five,
+    Rank::Six,
+    Rank::Seven,
+    Rank::Eight,
+    Rank::Nine,
+    Rank::Ten,
+    Rank::Jack,
+    Rank::Queen,
+    Rank::King,
 ];
 
-impl Value {
-    pub const fn values() -> [Self; 13] {
+impl Rank {
+    pub const fn ranks() -> [Self; 13] {
         RANKS
     }
 
     pub fn from_char(c: char) -> Option<Self> {
         match c.to_ascii_uppercase() {
-            'A' => Some(Value::Ace),
-            '2' => Some(Value::Two),
-            '3' => Some(Value::Three),
-            '4' => Some(Value::Four),
-            '5' => Some(Value::Five),
-            '6' => Some(Value::Six),
-            '7' => Some(Value::Seven),
-            '8' => Some(Value::Eight),
-            '9' => Some(Value::Nine),
-            'T' => Some(Value::Ten),
-            'J' => Some(Value::Jack),
-            'Q' => Some(Value::Queen),
-            'K' => Some(Value::King),
+            'A' => Some(Rank::Ace),
+            '2' => Some(Rank::Two),
+            '3' => Some(Rank::Three),
+            '4' => Some(Rank::Four),
+            '5' => Some(Rank::Five),
+            '6' => Some(Rank::Six),
+            '7' => Some(Rank::Seven),
+            '8' => Some(Rank::Eight),
+            '9' => Some(Rank::Nine),
+            'T' => Some(Rank::Ten),
+            'J' => Some(Rank::Jack),
+            'Q' => Some(Rank::Queen),
+            'K' => Some(Rank::King),
             _ => None,
         }
     }
 
     fn as_char(&self) -> char {
         match self {
-            Value::Ace => 'A',
-            Value::Two => '2',
-            Value::Three => '3',
-            Value::Four => '4',
-            Value::Five => '5',
-            Value::Six => '6',
-            Value::Seven => '7',
-            Value::Eight => '8',
-            Value::Nine => '9',
-            Value::Ten => 'T',
-            Value::Jack => 'J',
-            Value::Queen => 'Q',
-            Value::King => 'K',
+            Rank::Ace => 'A',
+            Rank::Two => '2',
+            Rank::Three => '3',
+            Rank::Four => '4',
+            Rank::Five => '5',
+            Rank::Six => '6',
+            Rank::Seven => '7',
+            Rank::Eight => '8',
+            Rank::Nine => '9',
+            Rank::Ten => 'T',
+            Rank::Jack => 'J',
+            Rank::Queen => 'Q',
+            Rank::King => 'K',
         }
+    }
+
+    fn as_int(&self) -> i8 {
+        match *self {
+            Rank::Two => 2,
+            Rank::Three => 3,
+            Rank::Four => 4,
+            Rank::Five => 5,
+            Rank::Six => 6,
+            Rank::Seven => 7,
+            Rank::Eight => 8,
+            Rank::Nine => 9,
+            Rank::Ten => 10,
+            Rank::Jack => 11,
+            Rank::Queen => 12,
+            Rank::King => 13,
+            Rank::Ace => 14,
+        }
+    }
+
+    pub fn gap(&self, other: &Self) -> u8 {
+        (self.as_int() - other.as_int()).abs() as u8
+    }
+
+    pub fn gap_with_ace(&self) -> u8 {
+        (Rank::Ace.as_int() - self.as_int()) as u8
     }
 }
 
 #[derive(PartialEq, PartialOrd, Eq, Ord, Clone, Hash, Debug)]
 pub struct Card {
-    /// The suit of this card.
-    pub suit: Suit,
-    /// The face value of this card.
-    pub value: Value,
+    suit: Suit,
+    rank: Rank,
 }
 
 impl Card {
-    pub fn new(suit: Suit, value: Value) -> Self {
-        Self { suit, value }
+    pub fn new(suit: Suit, rank: Rank) -> Self {
+        Self { suit, rank }
     }
 
     pub fn try_from_str(str: &str) -> Result<Self> {
         let mut chars = str.chars();
         let suit_char = chars.next().ok_or(Error::UnexpectedCardChar)?;
-        let value_char = chars.next().ok_or(Error::UnexpectedCardChar)?;
+        let rank_char = chars.next().ok_or(Error::UnexpectedCardChar)?;
         Ok(Self {
             suit: Suit::from_char(suit_char).ok_or(Error::UnexpectedCardChar)?,
-            value: Value::from_char(value_char).ok_or(Error::UnexpectedCardChar)?,
+            rank: Rank::from_char(rank_char).ok_or(Error::UnexpectedCardChar)?,
         })
+    }
+
+    pub fn suit(&self) -> &Suit {
+        &self.suit
+    }
+
+    pub fn rank(&self) -> &Rank {
+        &self.rank
     }
 }
 
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.suit.as_icon_char(), self.value.as_char())
+        write!(f, "{}{}", self.suit.as_icon_char(), self.rank.as_char())
     }
 }
 
@@ -169,7 +196,7 @@ impl serde::Serialize for Card {
     where
         S: serde::Serializer,
     {
-        let s = format!("{}{}", self.suit.as_char(), self.value.as_char());
+        let s = format!("{}{}", self.suit.as_char(), self.rank.as_char());
         serializer.serialize_str(&s)
     }
 }
@@ -189,20 +216,20 @@ impl<'de> serde::Deserialize<'de> for Card {
                 formatter.write_str("a string representing a card (e.g., SA, H5)")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<Card, E>
+            fn visit_str<E>(self, rank: &str) -> Result<Card, E>
             where
                 E: serde::de::Error,
             {
-                if value.len() != 2 {
-                    return Err(serde::de::Error::invalid_length(value.len(), &self));
+                if rank.len() != 2 {
+                    return Err(serde::de::Error::invalid_length(rank.len(), &self));
                 }
 
-                let suit_char = value.chars().next().unwrap();
-                let value_char = value.chars().nth(1).unwrap();
+                let suit_char = rank.chars().next().unwrap();
+                let rank_char = rank.chars().nth(1).unwrap();
 
-                let value = Value::from_char(value_char).ok_or_else(|| {
+                let rank = Rank::from_char(rank_char).ok_or_else(|| {
                     de::Error::unknown_variant(
-                        &value_char.to_string(),
+                        &rank_char.to_string(),
                         &[
                             "A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K",
                         ],
@@ -212,7 +239,7 @@ impl<'de> serde::Deserialize<'de> for Card {
                     de::Error::unknown_variant(&suit_char.to_string(), &["S", "H", "D", "C"])
                 })?;
 
-                Ok(Card { suit, value })
+                Ok(Card { suit, rank })
             }
         }
 
@@ -228,16 +255,16 @@ mod tests {
     fn test_try_parse_card() {
         let expected = Card {
             suit: Suit::Spade,
-            value: Value::Ace,
+            rank: Rank::Ace,
         };
         assert_eq!(expected, Card::try_from_str("SA").unwrap())
     }
 
     #[test]
-    fn test_value_cmp() {
-        assert!(Value::Two < Value::Ace);
-        assert!(Value::King < Value::Ace);
-        assert_eq!(Value::Two, Value::Two);
+    fn test_rank_cmp() {
+        assert!(Rank::Two < Rank::Ace);
+        assert!(Rank::King < Rank::Ace);
+        assert_eq!(Rank::Two, Rank::Two);
     }
 
     #[test]

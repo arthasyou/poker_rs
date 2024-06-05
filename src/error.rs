@@ -9,12 +9,14 @@ pub enum Error {
     UnexpectedSuitChar,
     #[error("Error reading characters while parsing")]
     UnexpectedCardChar,
+    #[error("Hand must contain exactly 2 cards")]
+    InvalidHandSize,
     #[error("Holdem hands should never have more than 7 cards in them.")]
-    // HoldemHandSize,
+    HoldemHandSize,
     // #[error("Card already added to hand {0}")]
     // DuplicateCardInHand(Card),
     // #[error("Extra un-used characters found after parsing")]
-    UnparsedCharsRemaining,
+    // UnparsedCharsRemaining,
     #[error("Hand range can't be offsuit while cards are suiterd")]
     OffSuitWithMatchingSuit,
     #[error("Hand range is suited while cards are not.")]

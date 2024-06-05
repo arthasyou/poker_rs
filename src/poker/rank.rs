@@ -165,15 +165,15 @@ pub trait HandRanker {
         let mut count_to_value: [u16; 5] = [0; 5]; // Bitmask representing the values that appear a specific number of times (0 to 4)
 
         for c in self.cards() {
-            let v = c.value.clone() as u8;
-            let s = c.suit.clone() as u8;
+            let v = c.rank().clone() as u8;
+            let s = c.suit().clone() as u8;
             value_set |= 1 << v;
             value_to_count[v as usize] += 1;
             suit_value_sets[s as usize] |= 1 << v;
 
             // // Ace count twice as 1 or 14 for straight
             // match c.value {
-            //     super::card::Value::Ace => {
+            //     super::card::Rank::Ace => {
             //         value_set |= 1 << 1;
             //         suit_value_sets[s as usize] |= 1 << 1;
             //     }
@@ -192,20 +192,48 @@ pub trait HandRanker {
 /// Implementation for `Hand`
 impl HandRanker for Hand {
     fn cards(&self) -> &[Card] {
-        &self[..]
+        &self.cards()
     }
 }
+// // maybe don't need this
+// impl HandRanker for Vec<Card> {
+//     fn cards(&self) -> &[Card] {
+//         &self[..]
+//     }
+// }
 
-impl HandRanker for Vec<Card> {
-    fn cards(&self) -> &[Card] {
-        &self[..]
+/// Compares the ranks of multiple players and returns the index of the winner(s).
+/// If there is a tie, returns the indices of all tied players.
+pub fn compare_ranks(ranks: &[Rank]) -> Vec<usize> {
+    let mut winners: Vec<usize> = vec![];
+    if ranks.is_empty() {
+        return winners;
     }
+
+    let mut best_rank = &ranks[0];
+    winners.push(0);
+
+    for (i, rank) in ranks.iter().enumerate().skip(1) {
+        match rank.cmp(best_rank) {
+            std::cmp::Ordering::Greater => {
+                best_rank = rank;
+                winners.clear();
+                winners.push(i);
+            }
+            std::cmp::Ordering::Equal => {
+                winners.push(i);
+            }
+            _ => {}
+        }
+    }
+
+    winners
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::poker::card::Value;
+    use crate::poker::card;
     use crate::poker::hand::Hand;
 
     #[test]
@@ -233,11 +261,11 @@ mod tests {
     #[test]
     fn test_high_card_hand() {
         let hand = Hand::new_from_strs(&["da", "h8", "c9", "ct", "c5"]).unwrap();
-        let rank = 1 << Value::Ace as u16
-            | 1 << Value::Eight as u16
-            | 1 << Value::Nine as u16
-            | 1 << Value::Ten as u16
-            | 1 << Value::Five as u16;
+        let rank = 1 << card::Rank::Ace as u16
+            | 1 << card::Rank::Eight as u16
+            | 1 << card::Rank::Nine as u16
+            | 1 << card::Rank::Ten as u16
+            | 1 << card::Rank::Five as u16;
 
         assert!(Rank::HighCard(rank) == hand.rank_five());
     }
@@ -246,11 +274,11 @@ mod tests {
     fn test_flush() {
         let hand = Hand::new_from_strs(&["da", "d8", "d9", "dt", "d5"]).unwrap();
         println!("hand: {}", hand);
-        let rank = 1 << Value::Ace as u16
-            | 1 << Value::Eight as u16
-            | 1 << Value::Nine as u16
-            | 1 << Value::Ten as u16
-            | 1 << Value::Five as u16;
+        let rank = 1 << card::Rank::Ace as u16
+            | 1 << card::Rank::Eight as u16
+            | 1 << card::Rank::Nine as u16
+            | 1 << card::Rank::Ten as u16
+            | 1 << card::Rank::Five as u16;
 
         println!("rank: {}", rank);
 
@@ -263,7 +291,7 @@ mod tests {
     #[test]
     fn test_full_house() {
         let hand = Hand::new_from_strs(&["da", "ca", "d9", "c9", "s9"]).unwrap();
-        let rank = (1 << (Value::Nine as u16)) << 13 | 1 << (Value::Ace as u16);
+        let rank = (1 << (card::Rank::Nine as u16)) << 13 | 1 << (card::Rank::Ace as u16);
         assert!(Rank::FullHouse(rank) == hand.rank_five());
     }
 
@@ -271,18 +299,18 @@ mod tests {
     fn test_two_pair() {
         // Make a two pair hand.
         let hand = Hand::new_from_strs(&["da", "ca", "D9", "c9", "st"]).unwrap();
-        let rank =
-            (1 << Value::Ace as u16 | 1 << Value::Nine as u16) << 13 | 1 << Value::Ten as u16;
+        let rank = (1 << card::Rank::Ace as u16 | 1 << card::Rank::Nine as u16) << 13
+            | 1 << card::Rank::Ten as u16;
         assert!(Rank::TwoPair(rank) == hand.rank_five());
     }
 
     #[test]
     fn test_one_pair() {
         let hand = Hand::new_from_strs(&["da", "ca", "d9", "c8", "st"]).unwrap();
-        let rank = (1 << Value::Ace as u16) << 13
-            | 1 << Value::Nine as u16
-            | 1 << Value::Eight as u16
-            | 1 << Value::Ten as u16;
+        let rank = (1 << card::Rank::Ace as u16) << 13
+            | 1 << card::Rank::Nine as u16
+            | 1 << card::Rank::Eight as u16
+            | 1 << card::Rank::Ten as u16;
 
         assert!(Rank::OnePair(rank) == hand.rank_five());
     }
@@ -291,8 +319,9 @@ mod tests {
     fn test_four_of_a_kind() {
         let hand = Hand::new_from_strs(&["da", "ca", "sa", "ha", "st"]).unwrap();
         assert!(
-            Rank::FourOfAKind((1 << (Value::Ace as u16) << 13) | 1 << (Value::Ten as u16))
-                == hand.rank_five()
+            Rank::FourOfAKind(
+                (1 << (card::Rank::Ace as u16) << 13) | 1 << (card::Rank::Ten as u16)
+            ) == hand.rank_five()
         );
     }
 
@@ -311,8 +340,9 @@ mod tests {
     #[test]
     fn test_three_of_a_kind() {
         let hand = Hand::new_from_strs(&["c2", "s2", "h2", "s5", "d6"]).unwrap();
-        let rank =
-            (1 << (Value::Two as u16)) << 13 | 1 << (Value::Five as u16) | 1 << (Value::Six as u16);
+        let rank = (1 << (card::Rank::Two as u16)) << 13
+            | 1 << (card::Rank::Five as u16)
+            | 1 << (card::Rank::Six as u16);
         assert!(Rank::ThreeOfAKind(rank) == hand.rank_five());
     }
 
@@ -359,8 +389,8 @@ mod tests {
     #[test]
     fn test_rank_seven_four_kind() {
         let h = Hand::new_from_strs(&["s2", "h2", "d2", "c2", "dk", "h9", "s4"]).unwrap();
-        let four_rank = (1 << Value::Two as u16) << 13;
-        let low_rank = 1 << Value::King as u16;
+        let four_rank = (1 << card::Rank::Two as u16) << 13;
+        let low_rank = 1 << card::Rank::King as u16;
         assert_eq!(Rank::FourOfAKind(four_rank | low_rank), h.rank());
     }
 
@@ -368,8 +398,8 @@ mod tests {
     fn test_rank_seven_four_plus_set() {
         // Four of a kind plus a set.
         let h = Hand::new_from_strs(&["s2", "h2", "d2", "c2", "d8", "s8", "c8"]).unwrap();
-        let four_rank = (1 << Value::Two as u16) << 13;
-        let low_rank = 1 << Value::Eight as u16;
+        let four_rank = (1 << card::Rank::Two as u16) << 13;
+        let low_rank = 1 << card::Rank::Eight as u16;
         assert_eq!(Rank::FourOfAKind(four_rank | low_rank), h.rank());
     }
 
@@ -377,8 +407,8 @@ mod tests {
     fn test_rank_seven_full_house_two_sets() {
         // We have two sets use the highest set.
         let h = Hand::new_from_strs(&["sa", "h2", "d2", "c2", "d8", "s8", "c8"]).unwrap();
-        let set_rank = (1 << Value::Eight as u16) << 13;
-        let low_rank = 1 << Value::Two as u16;
+        let set_rank = (1 << card::Rank::Eight as u16) << 13;
+        let low_rank = 1 << card::Rank::Two as u16;
         assert_eq!(Rank::FullHouse(set_rank | low_rank), h.rank());
     }
 
@@ -386,24 +416,49 @@ mod tests {
     fn test_rank_seven_full_house_two_pair() {
         // Test to make sure that we pick the best pair.
         let h = Hand::new_from_strs(&["h2", "d2", "c2", "d8", "s8", "dk", "sk"]).unwrap();
-        let set_rank = (1 << Value::Two as u16) << 13;
-        let low_rank = 1 << Value::King as u16;
+        let set_rank = (1 << card::Rank::Two as u16) << 13;
+        let low_rank = 1 << card::Rank::King as u16;
         assert_eq!(Rank::FullHouse(set_rank | low_rank), h.rank());
     }
 
     #[test]
     fn test_two_pair_from_three_pair() {
         let h = Hand::new_from_strs(&["h2", "d2", "d8", "s8", "dk", "sk", "ht"]).unwrap();
-        let pair_rank = ((1 << Value::King as u16) | (1 << Value::Eight as u16)) << 13;
-        let low_rank = 1 << Value::Ten as u16;
+        let pair_rank = ((1 << card::Rank::King as u16) | (1 << card::Rank::Eight as u16)) << 13;
+        let low_rank = 1 << card::Rank::Ten as u16;
         assert_eq!(Rank::TwoPair(pair_rank | low_rank), h.rank());
     }
 
     #[test]
     fn test_rank_seven_two_pair() {
         let h = Hand::new_from_strs(&["h2", "d2", "d8", "s8", "dk", "s6", "ht"]).unwrap();
-        let pair_rank = ((1 << Value::Two as u16) | (1 << Value::Eight as u16)) << 13;
-        let low_rank = 1 << Value::King as u16;
+        let pair_rank = ((1 << card::Rank::Two as u16) | (1 << card::Rank::Eight as u16)) << 13;
+        let low_rank = 1 << card::Rank::King as u16;
         assert_eq!(Rank::TwoPair(pair_rank | low_rank), h.rank());
+    }
+
+    #[test]
+    fn test_compare_ranks() {
+        let ranks = vec![
+            Rank::HighCard(1),
+            Rank::OnePair(1 << 13),
+            Rank::OnePair(1 << 13),
+            Rank::TwoPair(2 << 13),
+        ];
+        assert_eq!(compare_ranks(&ranks), vec![3]);
+
+        let ranks = vec![
+            Rank::HighCard(1),
+            Rank::OnePair(1 << 13),
+            Rank::TwoPair(2 << 13),
+            Rank::TwoPair(2 << 13),
+        ];
+        assert_eq!(compare_ranks(&ranks), vec![2, 3]);
+
+        let ranks = vec![Rank::HighCard(1)];
+        assert_eq!(compare_ranks(&ranks), vec![0]);
+
+        let ranks: Vec<Rank> = vec![];
+        assert_eq!(compare_ranks(&ranks), vec![]);
     }
 }

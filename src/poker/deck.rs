@@ -3,7 +3,7 @@ use std::{
     fmt,
 };
 
-use super::card::{Card, Suit, Value};
+use super::card::{Card, Rank, Suit};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone)]
@@ -60,11 +60,8 @@ impl Default for Deck {
     fn default() -> Self {
         let mut cards: HashSet<Card> = HashSet::new();
         for s in &Suit::suits() {
-            for r in &Value::values() {
-                cards.insert(Card {
-                    suit: s.clone(),
-                    value: r.clone(),
-                });
+            for r in &Rank::ranks() {
+                cards.insert(Card::new(s.clone(), r.clone()));
             }
         }
         Self { cards }
@@ -95,19 +92,13 @@ mod tests {
     #[test]
     fn test_contains_in() {
         let d = Deck::default();
-        assert!(d.contains(&Card {
-            suit: Suit::Spade,
-            value: Value::Ace,
-        }));
+        assert!(d.contains(&Card::new(Suit::Spade, Rank::Ace)));
     }
 
     #[test]
     fn test_remove() {
         let mut d = Deck::default();
-        let c = Card {
-            suit: Suit::Heart,
-            value: Value::Queen,
-        };
+        let c = Card::new(Suit::Heart, Rank::Queen);
         assert!(d.contains(&c));
         assert!(d.remove(&c));
         assert!(!d.contains(&c));
