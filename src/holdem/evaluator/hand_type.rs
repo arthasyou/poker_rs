@@ -43,9 +43,7 @@ impl HandEvaluator for Hand {
 
 #[cfg(test)]
 mod tests {
-    use crate::{holdem::hand_evaluator::HandType, poker::hand::Hand};
-
-    use super::HandEvaluator;
+    use super::*;
 
     #[test]
     fn test_suited() {

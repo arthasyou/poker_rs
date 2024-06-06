@@ -127,7 +127,26 @@ impl Rank {
         }
     }
 
-    fn as_int(&self) -> i8 {
+    pub fn from_int(i: i8) -> Option<Self> {
+        match i {
+            14 => Some(Rank::Ace),
+            2 => Some(Rank::Two),
+            3 => Some(Rank::Three),
+            4 => Some(Rank::Four),
+            5 => Some(Rank::Five),
+            6 => Some(Rank::Six),
+            7 => Some(Rank::Seven),
+            8 => Some(Rank::Eight),
+            9 => Some(Rank::Nine),
+            10 => Some(Rank::Ten),
+            11 => Some(Rank::Jack),
+            12 => Some(Rank::Queen),
+            13 => Some(Rank::King),
+            _ => None,
+        }
+    }
+
+    pub fn as_int(&self) -> i8 {
         match *self {
             Rank::Two => 2,
             Rank::Three => 3,
@@ -145,12 +164,18 @@ impl Rank {
         }
     }
 
-    pub fn gap(&self, other: &Self) -> u8 {
-        (self.as_int() - other.as_int()).abs() as u8
+    pub fn gap(&self, other: &Self) -> i8 {
+        (self.as_int() - other.as_int()).abs()
     }
 
-    pub fn gap_with_ace(&self) -> u8 {
-        (Rank::Ace.as_int() - self.as_int()) as u8
+    pub fn gap_with_ace(&self) -> i8 {
+        Rank::Ace.as_int() - self.as_int()
+    }
+}
+
+impl fmt::Display for Rank {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_char())
     }
 }
 
